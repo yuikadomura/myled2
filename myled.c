@@ -1,5 +1,5 @@
  /* SPDX-License-Identifer: GPL-3.0 */
- /* *Copyright (c) 2021 Ryuichi Uedad + Yui Kadomura. All rights reserved. */
+ /* *Copyright (c) 2021 Ryuichi Uedad. All rights reserved. */
 
 #include <linux/module.h>
 #include <linux/fs.h>
@@ -9,7 +9,7 @@
 #include <linux/io.h>
 #include <linux/delay.h>
 
-MODULE_AUTHOR("Ryuichi Ueda & Yui Kadomura");
+MODULE_AUTHOR("Ryuichi Ueda");
 MODULE_DESCRIPTION("driver for LED control");
 MODULE_LICENSE("GPL");
 MODULE_VERSION("0.0.1");
@@ -19,47 +19,53 @@ static struct cdev cdv;
 static struct class *cls = NULL;
 static volatile u32 *gpio_base = NULL;
 
+static int morse[26][4] = {{1,3,0,0},{3,1,1,1},{3,1,3,1},{3,1,1,0},{1,0,0,0}, /* A-E */
+	                   {1,1,3,1},{3,3,1,0},{1,1,1,1},{1,1,0,0},{1,3,3,3}, /* F-J */
+		           {3,1,3,0},{1,3,1,1},{3,3,0,0},{3,1,0,0},{3,3,3,0}, /* K-O */
+		           {1,3,3,1},{3,3,1,3},{1,3,1,0},{1,1,1,0},{3,0,0,0}, /* P-T */
+	                   {1,1,3,0},{1,1,1,3},{1,3,3,0},{3,1,1,3},{3,1,3,3},{3,3,1,1}}; /* U-Z */
+			    
 static ssize_t led_write(struct file*flip, const char* buf, size_t count, loff_t* pos)
 {
 	char c;
 	int n, i;
 	long t;
+	int point_len = 200;
 
 	if(copy_from_user(&c,buf,sizeof(char)))
 		return -EFAULT;
 
-	if( c >= '0' && c <= '9' ) {
-	    n = 0;
-	    n = (int)(c - '0');
+	n = 0;
+	if( c >= 'A' && c <= 'Z' ) {
+	    n = (int)(c - 'A');
+	} else if ( c >= 'a' && c <= 'z' ) {
+	    n = (int)(c - 'a');
+	} else {
+	    n = -1;
+	}
 	
-	    for( i=0; i<n; i++ ){
-                gpio_base[7] = 1 << 25;
-	        msleep( 500 );
-                gpio_base[10] = 1 << 25;
-	        msleep( 500 );
+	printk(KERN_INFO"c=%c n=%d\n", c, n);
+
+	if( n >= 0 ){
+	    for( i=0; i<4; i++ ) {
+	        if( morse[n][i] != 0 ) {
+                    gpio_base[7] = 1 << 25;
+	            msleep( point_len * morse[n][i] );
+                    gpio_base[10] = 1 << 25;
+	            msleep( point_len );
+		} else {
+	            msleep( point_len * 3 );
+		    break;
+		}
 	    }
 	}
 
 	return 1;
 }
 
-static ssize_t sushi_read(struct file* flip, char* buf, size_t count, loff_t* pos)
-{
-	int size = 0;
-	char sushi [] = {'s', 'u', 's', 'h', 'i',0x0A};
-	if(copy_to_user(buf+size,(const char *)sushi, sizeof(sushi))){
-		printk(KERN_INFO"sushi : copy_to_user failed\n");
-	return -EFAULT;
-	}
-	size += sizeof(sushi);
-	return size;
-
-}
-
 static struct file_operations led_fops = {
 	.owner = THIS_MODULE,
 	.write = led_write,
-	.read = sushi_read
 };
 
 static int __init init_mod(void)
