@@ -70,6 +70,8 @@ Youtubeのリンクは[こちら]()
 
 [1] [第7～8回講義動画](https://youtu.be/xQW8-FNuboo)
 
+[2] [一つ前に提出した課題1のプログラム](https://github.com/yuikadomura/2021-12-10)
+
 ①Readme の書き方について[こちらのサイト](https://style.potepan.com/articles/33682.html#GitHubREADME-3)
 
 ②上田隆一先生の講義動画[第3回補足](https://youtu.be/vjiWa3srH7g)と[講義動画](https://ryuichiueda.github.io/robosys2020/lesson7_device_driver.html#/)7のスライド
